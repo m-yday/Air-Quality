@@ -1,0 +1,45 @@
+---
+title: "airquality"
+format: html
+---
+
+1)  All entries in `airquality` at least one missing value.
+
+```{r}
+airquality[apply(airquality, 1, anyNA),]
+
+```
+
+2.  The mean, standard deviation, and maximum & minimum values of both Ozone & Temperature.
+
+```{r}
+
+cbind("mean" = apply(airquality[,c(1,4)], 2, mean, na.rm = TRUE),
+      "sd"   = apply(airquality[,c(1,4)], 2, sd,   na.rm = TRUE),
+      "min"  = apply(airquality[,c(1,4)], 2, min,  na.rm = TRUE),
+      "max"  = apply(airquality[,c(1,4)], 2, max,  na.rm = TRUE)
+      )
+```
+
+3.  When manually calculating the parameter estimates for the cars dataset:
+
+```{r}
+
+X <- cbind(1,cars[,1])
+Y <- cars[,2]
+
+beta_est <- solve(t(X) %*% X) %*% t(X) %*% Y
+
+rownames(beta_est) <- c("b_0","b_1")
+colnames(beta_est) <- "estimate"
+beta_est
+```
+
+4.  When fitting the model using `lm`:
+
+```{r}
+
+lm(dist ~ speed, cars)
+```
+
+We do get the same results as the manual calculation.\

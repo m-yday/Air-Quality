@@ -1,5 +1,26 @@
 project:
-  title: "Air Quality"
-
-editor: visual
-
+  type: book
+  render:
+  - index.qmd
+  - airquality.qmd
+  - lowess.qmd
+  output-dir: docs
+book:
+  title: Statistical Computing
+  sidebar:
+    border: true
+    background: light
+    position: right
+  navbar:
+    search: true
+    background: light
+  chapters:
+  - index.qmd
+  - airquality.qmd
+  - lowess.qmd
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    toc-location: left

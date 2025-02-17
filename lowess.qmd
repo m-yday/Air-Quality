@@ -1,0 +1,125 @@
+---
+title: "lowess"
+format: html
+---
+
+1.  
+
+```{r}
+set.seed(1)
+
+#======= generate data =======#
+n <- 100
+x <- 1:n
+
+e <- rnorm(n, mean = 0, sd = 0.2)
+y <- sin(x/10) + e
+```
+
+2.  
+
+```{r}
+
+nearest <- function(dists, k){
+  # sorts smallest to largest, 
+  # and slices out the k nearest neighbours
+  sorted <- sort(dists)
+  d_max <- sorted[k+1] |> unname()
+  neighbours <- names(sorted)[2:(k+1)] |> as.integer()
+  
+  return(data.frame('vals' = c('x' = neighbours,'d' = d_max)))
+}
+custom_estimate <- function(data,y){
+  len <- (length(data)-1)/2
+  w_js <- data[1:len]
+  neighs <- data[(len+1):(2*len)] |> as.integer()
+  
+  X <- cbind(1,neighs)
+  y_vec <- matrix(y[neighs],ncol=1)
+  
+  W <- diag(w_js)
+
+  #======= weighted regression =======#
+  ests <- solve(t(X) %*% W %*% X) %*% t(X) %*% W %*% y_vec
+  
+  x_val <- data[(2*len+1)]
+  
+  print(x_val)
+  print(ests)
+  y_est <- ests[1] + ests[2]*x_val
+  
+  return(cbind('x' = x_val,'y_hat' = y_est))
+}
+
+
+# f: (0,1)
+# y^ = f(x)
+customLowess <- function(x, y, f){
+  
+  #======= calculate span =======#
+  n <- length(x)
+  k <- ceiling(f*n)
+  #======= calculate weights =======#
+  # using the 'tricube kernel'
+  
+  distances <- cbind(x,y) |> dist(method = 'euclidean') |>
+    as.matrix()
+  
+  neighs <- apply(distances,1,nearest,k=k,simplify=TRUE) |>
+    as.data.frame()
+  colnames(neighs) <- 1:n
+  
+  #split output of custom 'nearest' function into 
+  # a matrix of neighbours (ints)
+  # and a vector of d_maxes
+  nval <- nrow(neighs)
+  neighbours <- neighs[-nval,] |> t()
+  d_max <- neighs[nval,] |> t()
+  
+  #since each row i in neighbours represents the neighbours of 
+  # the x_ith point, we can use 1:n to simply get the set of x_is
+  
+  w_ij <- (1-(abs((1:n)-neighbours)/(d_max %*% rep(1,k)))^3)^3
+  
+  full_data <- data.frame('w'= w_ij,neighbours,'x'=x)
+  
+  test_xi <- 50
+  test_data <- full_data[test_xi, ]
+  ests_test <- custom_estimate(test_data, y)
+  
+  print(ests_test)  # Your custom regression estimate for x = 50
+
+  
+
+  
+  out <- apply(X=full_data,MARGIN=1,FUN = custom_estimate, y=y, 
+        simplify=TRUE) |> as.data.frame() |> t()
+
+  }
+```
+
+\
+
+3.  
+
+```{r}
+f <- 0.3
+model_custom <- customLowess(x=x,y=y,f=f)
+model_lowess <- lowess(x=x,y=y,f=f,iter=0)
+print(model_lowess$y[model_lowess$x == 50])  # Compare to lowess()
+{
+  plot(x,y,pch=16,cex=0.5)
+  lines(model_custom, col = 'red',type='l')
+  lines(model_lowess, col ='blue',type='l')
+}
+```
+
+```{r}
+{
+plot(x, y, pch = 16, cex = 0.5)
+lines(model_custom, col = 'red', type = 'l', lwd = 2)
+lines(model_lowess, col = 'blue', type = 'l', lwd = 2)
+legend("topright", legend = c("Custom LOWESS", "Built-in LOWESS"),
+       col = c("red", "blue"), lty = 1, lwd = 2)
+}
+```
