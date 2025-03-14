@@ -38,27 +38,6 @@ nearest <- function(dists, k){
   
   return(data.frame('vals' = c('x' = neighbours,'d' = d_max)))
 }
-custom_estimate <- function(data,y){
-  len <- (length(data)-1)/2
-  w_js <- data[1:len]
-  neighs <- data[(len+1):(2*len)] |> as.integer()
-  
-  X <- cbind(1,neighs)
-  y_vec <- matrix(y[neighs],ncol=1)
-  
-  W <- diag(w_js)
-
-  #======= weighted regression =======#
-  ests <- solve(t(X) %*% W %*% X) %*% t(X) %*% W %*% y_vec
-  
-  x_val <- data[(2*len+1)]
-  
-  # print(x_val)
-  # print(ests)
-  y_est <- ests[1] + ests[2]*x_val
-  
-  return(cbind('x' = x_val,'y_hat' = y_est))
-}
 
 
 # f: (0,1)
@@ -84,15 +63,12 @@ customLowess <- function(x, y, f){
   nval <- nrow(neighs)
   neighbours <- neighs[-nval,] |> t()
   d_max <- neighs[nval,] |> t()
-  print((d_max))
   
   #since each row i in neighbours represents the neighbours of 
   # the x_ith point, we can use 1:n to simply get the set of x_is
   
   w_ij <- (1-(abs((1:n)-neighbours)/(d_max %*% rep(1,k)))^3)^3
-  print((w_ij))
   
-  full_data <- data.frame('w'= w_ij,neighbours,'x'=x)
   
   # test_xi <- 50
   # test_data <- full_data[test_xi, ]
@@ -100,14 +76,26 @@ customLowess <- function(x, y, f){
   # 
   # print(ests_test)  # Your custom regression estimate for x = 50
 
+  smoothed <- matrix(as.numeric(NA),nrow=n,ncol=2) 
+  for (i in 1:n){
+    w_js <- w_ij[i,]
+    neighs <- neighbours[i,] |> as.integer()
+    
+    X <- cbind(1,neighs)
+    y_vec <- matrix(y[neighs],ncol=1)
+    
+    W <- diag(w_js)
   
+    #======= weighted regression =======#
+    ests <- solve(t(X) %*% W %*% X) %*% t(X) %*% W %*% y_vec
+   
+    y_est <- ests[1] + ests[2]*i
+    
+    smoothed[i,] <- (c(i,y_est))
+  }
 
+  return(smoothed)
   
-  out <- apply(X=full_data,
-               MARGIN=1,
-               FUN = custom_estimate, 
-               y=y, 
-               simplify=TRUE) |> as.data.frame() |> t()
 }
 ```
 
